@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct 12 13:20:19 2018
+
+@author: felix
+"""
+
+def computeHransac(locs1, locs2):
+    bestH2to1, inliers = None, None
+    # YOUR CODE HERE
+    
+    iteration=15000
+    num=len(locs1)
+    inliers_max=np.zeros((1,num))
+    bestInliers=0
+    
+    for i in range(iteration):
+        
+        random = np.random.permutation(num)
+        idx = random[:4]
+        random1=np.array([locs1[idx[0]],locs1[idx[1]],locs1[idx[2]],locs1[idx[3]]])
+        random2=np.array([locs2[idx[0]],locs2[idx[1]],locs2[idx[2]],locs2[idx[3]]])
+        H2to1=computeHnorm(random1,random2)
+        
+        inliers=np.zeros((1,num))
+        for i in range(num):
+            l2=np.array([[locs2[i][0]],[locs2[i][1]],[1]])
+            l1_predict=(H2to1/H2to1[2,2])@l2#calculate the predict points
+            l1_predict=l1_predict/l1_predict[2][0]
+            l1=np.array([[locs1[i][0]],[locs1[i][1]],[1]])
+            diff=l1-l1_predict
+            if np.linalg.norm(diff[:,0]) < 5:
+                inliers[0][i]=1
+            else:
+                inliers[0][i]=0
+        numInliers=np.sum(inliers)
+        if numInliers>bestInliers:
+            bestInliers=numInliers
+            inliers_max=inliers
+   
+    p1_new=np.zeros(((int)(bestInliers),2))
+    p2_new=np.zeros(((int)(bestInliers),2))
+    count=0
+    for i in range(num):
+        if inliers_max[0][i]==1:
+            count+=1
+            p1_new[count-1,:]=locs1[i]
+            p2_new[count-1,:]=locs2[i]
+    bestH2to1=computeHnorm(p1_new,p2_new)
+    inliers=inliers_max
+    
+    return bestH2to1, inliers
+
+    
+
+
+# Q3.4
+# skimage.transform.warp will help
+def compositeH( H2to1, template, img ):
+    compositeimg = img
+    # YOUR CODE HERE
+    warped = skimage.transform.warp(img, H2to1,output_shape=np.shape(template))
+    m=np.size(warped,0)
+    n=np.size(warped,1)
+    for i in range(m):
+        for j in range(n):
+            if warped[i,j]==0:
+                warped[i,j]=template[i,j]
+    compositeimg=warped
+
+    
+    
+    return compositeimg
+
+
+
+    
+    
+    return
+   num = 104
+   randomIdx = np.random.randint(0,104,4) 
+   random_1 = np.array(x1[randomIdx,:])
+   random_2 = np.array(x2[randomIdx,:])
+   extra_ones = np.array(np.ones((num,1)))
+   l1_dummy = (np.concatenate((x1, extra_ones),axis=1)).T
+   l2_dummy = (np.concatenate((x2, extra_ones),axis=1)).T
+   l1_dummy=l1_dummy.astype(np.int)
+   l2_dummy=(int)(l2_dummy)
+   H_out = 800
+   W_out = 1280
